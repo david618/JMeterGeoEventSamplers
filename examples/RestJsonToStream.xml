@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<template productVersion="10.4.0">
+    <geoEventServices>
+        <geoEventService name="f4d87481-20ac-4dca-8278-75d62209fe25" label="rest-json-to-stream" description="" lineStyle="Diagonal" runningState="STARTED" statusDetails="">
+            <inputs>
+                <input ref="325c31b0-cd73-4483-826a-aeb4dfd403dd" label="rest-json-in" left="61.6333" top="51.8" width="75.4" height="40.4"/>
+            </inputs>
+            <outputs>
+                <output ref="20eaecb2-10e8-4aaa-8dfb-0aa586cb4246" label="stream-service-out" left="211.633" top="48.8" width="120.4" height="40.4"/>
+            </outputs>
+            <nodes/>
+            <flow>
+                <from ref="325c31b0-cd73-4483-826a-aeb4dfd403dd" label="rest-json-in">
+                    <to ref="20eaecb2-10e8-4aaa-8dfb-0aa586cb4246" label="stream-service-out"/>
+                </from>
+            </flow>
+            <geoEventsReceivedRateRange max="0.0" min="0.0"/>
+            <geoEventsSentRateRange max="0.0" min="0.0"/>
+        </geoEventService>
+    </geoEventServices>
+    <inputs>
+        <input url="http://w12ags104.jennings.home:6180/geoevent/rest/receiver/rest-json-in" clusterCommand="START" connector="esri-receive-json-rest-in" connectorLabel="Receive JSON on a REST Endpoint" label="rest-json-in" name="325c31b0-cd73-4483-826a-aeb4dfd403dd" runningState="STARTED" statusDetails="NULL" supportsAllGeoEventDefinitions="true">
+            <adapter uri="com.esri.ges.adapter.inbound/Generic-JSON/10.4.0">
+                <properties>
+                    <property name="YGeometryField" type="String">lat</property>
+                    <property name="CreateGeoEventDefinition" type="Boolean">true</property>
+                    <property name="isLearningMode" type="Boolean">false</property>
+                    <property name="ExistingGeoEventDefinitionName" type="GeoEventDefinition">incident</property>
+                    <property name="ZGeometryField" type="String"></property>
+                    <property name="NewGeoEventDefinitionName" type="String">FAA-Stream</property>
+                    <property name="WKTextGeometryField" type="String"></property>
+                    <property name="BuildGeometryFromFields" type="Boolean">true</property>
+                    <property name="WKIDGeometryField" type="String"></property>
+                    <property name="CustomDateFormat" type="String">MM/dd/yyyy hh:mm:ss aa</property>
+                    <property name="JsonObjectName" type="String"></property>
+                    <property name="XGeometryField" type="String">lon</property>
+                </properties>
+            </adapter>
+            <geoEventDefinitionHistory>
+                <guid>4fe6e579-b9d1-46d6-b0e0-efb85bc419a4</guid>
+            </geoEventDefinitionHistory>
+            <geoEventsRateRange max="0.0" min="0.0"/>
+            <supportedGeoEventDefinitions/>
+            <transport uri="com.esri.ges.transport.inbound/HTTP/10.4.0">
+                <properties>
+                    <property name="headers" type="String"></property>
+                    <property name="acceptableMimeTypesServerMode" type="String">application/json</property>
+                    <property name="clientURL" type="String"></property>
+                    <property name="httpAppendToEnd" type="String"></property>
+                    <property name="postContentType" type="String"></property>
+                    <property name="clientPostBody" type="String"></property>
+                    <property name="acceptableMimeTypesClientMode" type="String"></property>
+                    <property name="httpMethod" type="String">GET</property>
+                    <property name="httpTimeoutValue" type="Integer">30</property>
+                    <property name="useLongPolling" type="Boolean">false</property>
+                    <property name="clientURLProxy" type="String"></property>
+                    <property name="frequency" type="Integer">5</property>
+                    <property name="mode" type="String">SERVER</property>
+                    <property name="honorLastModified" type="Boolean">true</property>
+                    <property name="clientPostFrom" type="String">TEXT</property>
+                    <property name="clientPostParameters" type="String"></property>
+                    <property name="useClientURLProxy" type="Boolean">false</property>
+                    <property name="clientParameters" type="String"></property>
+                </properties>
+            </transport>
+        </input>
+    </inputs>
+    <outputs>
+        <output clusterCommand="START" connector="esri-out-feature-stream-service" connectorLabel="Send Features to a Stream Service" label="stream-service-out" name="20eaecb2-10e8-4aaa-8dfb-0aa586cb4246" runningState="STARTED" statusDetails="NULL" supportsAllGeoEventDefinitions="true">
+            <adapter uri="com.esri.ges.adapter.outbound/JSON/10.4.0">
+                <properties>
+                    <property name="updateInterval" type="String">0.01</property>
+                    <property name="flattenEvents" type="Boolean">true</property>
+                    <property name="keepEventsUnique" type="Boolean">false</property>
+                    <property name="mimeType" type="String">application/json</property>
+                    <property name="prettyJson" type="Boolean">false</property>
+                </properties>
+            </adapter>
+            <geoEventDefinitionHistory>
+                <guid>4fe6e579-b9d1-46d6-b0e0-efb85bc419a4</guid>
+            </geoEventDefinitionHistory>
+            <geoEventsRateRange max="0.0" min="0.0"/>
+            <supportedGeoEventDefinitions/>
+            <transport uri="com.esri.ges.transport.outbound/StreamService/10.4.0">
+                <properties>
+                    <property name="path" type="ArcGISFolder">/</property>
+                    <property name="datastore" type="ArcGISConnection">default</property>
+                    <property name="geoEventDefinitionName" type="GeoEventDefinition">FAA-Stream</property>
+                    <property name="serviceName" type="ArcGISStreamService">FAA-Stream</property>
+                </properties>
+            </transport>
+        </output>
+    </outputs>
+    <geoEventDefinitions>
+        <geoEventDefinition guid="4fe6e579-b9d1-46d6-b0e0-efb85bc419a4" name="FAA-Stream" owner="auto-generated/com.esri.ges.adapter.inbound.Generic-JSON/10.4.0" accessType="editable">
+            <fieldDefinitions>
+                <fieldDefinition name="tn" type="String" cardinality="One">
+                    <fieldDefinitions/>
+                </fieldDefinition>
+                <fieldDefinition name="lon" type="Double" cardinality="One">
+                    <fieldDefinitions/>
+                </fieldDefinition>
+                <fieldDefinition name="dtg" type="Date" cardinality="One">
+                    <fieldDefinitionTag>
+                        <name>TIME_START</name>
+                    </fieldDefinitionTag>
+                    <fieldDefinitions/>
+                </fieldDefinition>
+                <fieldDefinition name="id" type="Integer" cardinality="One">
+                    <fieldDefinitionTag>
+                        <name>TRACK_ID</name>
+                    </fieldDefinitionTag>
+                    <fieldDefinitions/>
+                </fieldDefinition>
+                <fieldDefinition name="lat" type="Double" cardinality="One">
+                    <fieldDefinitions/>
+                </fieldDefinition>
+                <fieldDefinition name="geometry" type="Geometry" cardinality="One">
+                    <fieldDefinitionTag>
+                        <name>GEOMETRY</name>
+                    </fieldDefinitionTag>
+                    <fieldDefinitions/>
+                </fieldDefinition>
+            </fieldDefinitions>
+        </geoEventDefinition>
+    </geoEventDefinitions>
+    <tags/>
+    <connectors>
+        <connector accessType="editable" label="Push Text to a TCP Socket (Deprecated)" name="esri-out-text-tcp-client-copy" type="outbound">
+            <adapter uri="com.esri.ges.adapter.outbound/Text/10.4.0"/>
+            <defaultName>tcp-text-out</defaultName>
+            <description>Pushes GeoEvents as text to a TCP socket for display in a client application.</description>
+            <properties>
+                <advanced>
+                    <property default="60" label="Connection Timeout (Client Mode)" name="clientConnectionTimeout" source="transport"/>
+                    <property default="\n" label="Message Separator" name="MessageSeparator" source="adapter"/>
+                    <property default="," label="Attribute Separator" name="AttributeSeparator" source="adapter"/>
+                    <property label="Output Date Format" name="CustomDateFormatType" source="adapter"/>
+                    <property label="Custom Date Format" name="CustomDateFormat" source="adapter"/>
+                    <property label="Language for Number Formatting" name="LocaleForNumberFormatter" source="adapter"/>
+                </advanced>
+                <hidden>
+                    <property default="text/plain" label="MIME Type" name="mimeType" source="adapter"/>
+                    <property default="localhost" label="Host (Client Mode)" name="host" source="transport"/>
+                    <property default="SERVER" label="Mode" name="mode" source="transport"/>
+                </hidden>
+                <shown>
+                    <property default="5575" label="Server Port" name="port" source="transport"/>
+                </shown>
+            </properties>
+            <transport uri="com.esri.ges.transport.outbound/TCP/10.4.0"/>
+        </connector>
+    </connectors>
+</template>
