@@ -7,6 +7,8 @@ package JMeter.plugins.functional.samplers.geoevent;
 
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -23,28 +25,67 @@ public class WsListener implements WebSocketListener {
     String idFieldName;
     
     boolean ready;
+    int cnt;
+    long sttime;
+    
+    Drop drop;
     
     static ConcurrentLinkedQueue<Integer> ids; 
     
-    public boolean hasId(int id) {
+    public synchronized boolean getId(int id, int timeout) {
         boolean f = false;
-        //int n = ids.indexOf(id);
-        if (ids.contains((Integer) id)) {
-            boolean a = ids.remove((Integer) id);
-            f = true;     
-            //System.out.println(id + " " + a);
+        long endtime = System.currentTimeMillis() + timeout;
+        
+        while (!ids.contains((Integer) id) && System.currentTimeMillis() < endtime) {
+            try {
+                System.out.println(id);
+                System.out.println(ids.contains((Integer) id));
+                System.out.println(ids);                
+                wait();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(WsListener.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return f;
     }
+    
+    public synchronized boolean hasId(int id, int step) {
+        boolean f = false;
+        //int n = ids.indexOf(id);
+        if (ids.contains((Integer) id)) {
+            ids.remove((Integer) id);
+            f = true;     
+            //System.out.println(id + " " + a);
+        } else {
+            try {
+                wait(step);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(WsListener.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return f;
+    }
+    
+    public synchronized boolean hasId(int id) {
+        boolean f = false;
+        //int n = ids.indexOf(id);
+        if (ids.contains((Integer) id)) {
+            ids.remove((Integer) id);
+            f = true;     
+            //System.out.println(id + " " + a);
+        } 
+        return f;
+    }    
     
     public boolean isReady() {
         return ready;
     }
 
-    public WsListener(String idFieldName) {
+    public WsListener(String idFieldName, Drop drop) {
         this.idFieldName = idFieldName;
         ids = new ConcurrentLinkedQueue<Integer>();
         ready = false;
+        this.drop = drop;
     }
 
 
@@ -57,9 +98,20 @@ public class WsListener implements WebSocketListener {
     public void onWebSocketText(String s) {
 //        System.out.println(s);
         // Parse the String and find the id 
+        cnt++;
+        if (cnt == 1) {
+            sttime = System.currentTimeMillis();
+        }
+        if (cnt == 2000) {
+           double rate = 2000.0 / (System.currentTimeMillis() - sttime) * 1000.0;
+           System.out.println(rate);
+        }
+        
         JSONObject json = new JSONObject(s);
-        ids.add(json.getJSONObject("attributes").getInt(idFieldName));
-
+        int id = json.getJSONObject("attributes").getInt(idFieldName);
+        
+        //drop.putID(id);
+        ids.add(id);
     }
 
     @Override
@@ -75,6 +127,7 @@ public class WsListener implements WebSocketListener {
 //        System.out.println("Connected");
         this.session = session;
         ready = true;
+        cnt = 0;
 
     }
 

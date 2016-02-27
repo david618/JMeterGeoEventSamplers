@@ -18,9 +18,10 @@ public class WsClient implements Runnable {
 
     String urlString;
     String idFieldName;
-    Integer timeoutSeconds;
 
     boolean ready;
+    
+    Drop drop;
 
     WsListener listener;
 
@@ -31,26 +32,30 @@ public class WsClient implements Runnable {
     public boolean hasId(int id) {
         return listener.hasId(id);
     }
-
+    
+    public boolean hasId(int id, int step) {
+        return listener.hasId(id, step);
+    }
+    
+    public boolean getId(int id, int timeout) {
+        return listener.getId(id, timeout);
+    }
+    
+       
     public boolean isReady() {
         return ready;
     }
 
-    public WsClient(String urlString, String idFieldName) {
+    public WsClient(String urlString, String idFieldName, Drop drop) {
 //        System.out.println(urlString);
 //        System.out.println(idFieldName);
         this.urlString = urlString;
         this.idFieldName = idFieldName;
-        this.timeoutSeconds = 10;
         this.ready = false;
+        this.drop = drop;
     }
 
-    public WsClient(String urlString, String idFieldName, Integer timeoutSeconds) {
-        this.urlString = urlString;
-        this.idFieldName = idFieldName;
-        this.timeoutSeconds = timeoutSeconds;
-        this.ready = false;
-    }
+
 
     @Override
     public void run() {
@@ -64,7 +69,7 @@ public class WsClient implements Runnable {
 
             webSocketClient.start();
 
-            listener = new WsListener(this.idFieldName);
+            listener = new WsListener(this.idFieldName, this.drop);
 
             webSocketClient.connect(listener, uri);
 
@@ -76,6 +81,9 @@ public class WsClient implements Runnable {
                 }
             }
             this.ready = true;
+            
+            
+            
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();

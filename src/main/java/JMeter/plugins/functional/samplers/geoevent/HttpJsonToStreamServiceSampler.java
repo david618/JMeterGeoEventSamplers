@@ -41,9 +41,11 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
     private static final Logger log = LoggingManager.getLoggerForClass();
 
     private static ExecutorService executor = Executors.newCachedThreadPool();
-    
 
+    private static WebTarget target;
     
+    private static Drop drop;
+
     static WsClient wsClient;
     static Thread readerThread;
 
@@ -90,32 +92,30 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
 
     public void setTimeout(String timeout) {
         setProperty("Timeout", timeout);
-    }    
-    
+    }
+
     public String getStep() {
         return getPropertyAsString("Step", "");
     }
 
     public void setStep(String step) {
         setProperty("Step", step);
-    }        
+    }
     
     @Override
     public SampleResult sample(Entry entry) {
-        
-//        System.out.println("Start of Sample");
 
+//        System.out.println("Start of Sample");
         SampleResult sampleResult = new SampleResult();
         sampleResult.setSampleLabel(getName());
 
         int timeout = Math.abs(Integer.parseInt(getTimeout()));
         int step = Math.abs(Integer.parseInt(getStep()));
-        
+
         JSONObject json = new JSONObject(getPostBody());
         int id = json.getInt(getIDFieldName());
 //        System.out.println(id);
-        
-        
+
         //log.info("Start of Sample");
         sampleResult.sampleStart();
 
@@ -131,10 +131,73 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
          java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
          }        
          */
+        Invocation.Builder invocationBuilder = target.request(MediaType.APPLICATION_JSON);
+
+        Response response = invocationBuilder.post(Entity.entity(getPostBody(), MediaType.APPLICATION_JSON));
+    
+        int t = 0;
+        while (!wsClient.hasId(id, step) && t < timeout) {
+            t += step;
+//            try {
+//                Thread.sleep(step);
+//            } catch (InterruptedException ex) {
+//                java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+        }
+        
+
+        
+        //boolean f = wsClient.getId(id, timeout);
+        //boolean f = getId(id, timeout);
+        //boolean f = drop.getID(id, timeout);
+        
+        if (t < timeout) {
+//        if (f) {
+            sampleResult.setResponseCodeOK();
+            sampleResult.setSuccessful(true);
+            sampleResult.setResponseMessage("Okay");
+        } else {
+            sampleResult.setResponseCode("-1");
+            sampleResult.setSuccessful(false);
+            sampleResult.setResponseMessage("Fail");
+        }
+
+        sampleResult.setSamplerData(getPostBody());
+        sampleResult.setBytes(getPostBody().length());
+
+        sampleResult.sampleEnd();
+        sampleResult.latencyEnd();
+
+        //log.info("End of Sample");
+        return sampleResult;
+
+    }
+
+    @Override
+    public void testStarted() {
+        testStarted("Whatever");
+    }
+
+    @Override
+    public void testStarted(String string) {
+        System.out.println("Test Started");
+        
+        drop = new Drop();
+
+        
+        wsClient = new WsClient(getStreamServiceURL() + "/subscribe", getIDFieldName(), drop);
+        readerThread = new Thread(wsClient);
+        readerThread.start();
+
+        while (!wsClient.isReady()) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
         try {
-
-
-            
             // Send the Message to Rest Endpoint
             String urlString = getRestInputURL();
             //System.out.println(urlString);
@@ -172,21 +235,7 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
                 client = ClientBuilder.newClient();
             }
 
-            WebTarget target = client.target(urlString);
-            
-            Invocation.Builder invocationBuilder = target.request(MediaType.APPLICATION_JSON);
-            
-            Response response = invocationBuilder.post(Entity.entity(getPostBody(), MediaType.APPLICATION_JSON));
-            
-                        
-
-//            WebTarget targetWithQueryParams = target.queryParam("f", "json");
-//
-//            Invocation.Builder invocationBuilder = targetWithQueryParams.request(MediaType.TEXT_PLAIN_TYPE);
-
-//            Response response = invocationBuilder.get();
-            //System.out.println(response.getStatus());
-
+            target = client.target(urlString);
         } catch (MalformedURLException ex) {
             java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
             ex.printStackTrace();
@@ -197,74 +246,6 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
             java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
             ex.printStackTrace();
         }
-
-        // Listen for Message to Appear on Stream Service
-//        WsClient wsc = new WsClient(getStreamServiceURL() + "/subscribe", getUniqueMessageID());
-//        
-//        wsc.start();
-//        
-//        if (wsc.isFound()) {
-//            sampleResult.setResponseCodeOK();
-//        } else {
-//            sampleResult.setResponseCode("999");
-//        }
-//        
-        
-
-        int t = 0;
-        while (!wsClient.hasId(id) && t < timeout) {
-            t += step;
-            try {
-                Thread.sleep(step);
-            } catch (InterruptedException ex) {
-                java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            
-        }
-        
-        if (t < timeout) {
-            sampleResult.setResponseCodeOK();
-            sampleResult.setSuccessful(true);
-            sampleResult.setResponseMessage("Okay");
-        } else {
-            sampleResult.setResponseCode("-1");
-            sampleResult.setSuccessful(false);
-            sampleResult.setResponseMessage("Fail");
-        }
-        
-        sampleResult.setSamplerData(getPostBody());
-        sampleResult.setBytes(getPostBody().length());
-
-        sampleResult.sampleEnd();
-        sampleResult.latencyEnd();
-        
-
-        
-        //log.info("End of Sample");
-        return sampleResult;
-
-    }
-
-    @Override
-    public void testStarted() {        
-        testStarted("Whatever");
-    }
-
-    @Override
-    public void testStarted(String string) {
-        System.out.println("Test Started");
-        wsClient = new WsClient(getStreamServiceURL() + "/subscribe", getIDFieldName());
-        readerThread = new Thread(wsClient);
-        readerThread.start();
-
-        while (!wsClient.isReady()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-                java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        
         log.debug("Test Started");
     }
 
@@ -279,14 +260,32 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
         log.debug("Test Ended");
         wsClient.getListener().session.close();
         readerThread.interrupt();
-        
-        ConcurrentLinkedQueue<Integer> ids = wsClient.getListener().ids;
-        System.out.println(ids.size());
-        for (Integer id: ids) {
-            System.out.print(id + " ");
-        }
-        System.out.println();
-        
+
+//        ConcurrentLinkedQueue<Integer> ids = wsClient.getListener().ids;
+//        System.out.println(ids.size());
+//        for (Integer id : ids) {
+//            System.out.print(id + " ");
+//        }
+//        System.out.println();
+
+        target = null;
+
     }
 
+    public synchronized boolean getId(int id, int timeout) {
+        boolean f = false;
+        long endtime = System.currentTimeMillis() + timeout;
+        
+        while (!wsClient.hasId(id)) {
+            try {
+                System.out.println(id);               
+                wait();
+            } catch (InterruptedException ex) {
+                log.error(ex.getMessage());
+            }
+        }
+        return f;
+    }    
+    
+    
 }
