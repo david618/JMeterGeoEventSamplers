@@ -21,7 +21,7 @@ public class WsClient implements Runnable {
 
     boolean ready;
     
-    Drop drop;
+    Messages messages;
 
     WsListener listener;
 
@@ -46,13 +46,13 @@ public class WsClient implements Runnable {
         return ready;
     }
 
-    public WsClient(String urlString, String idFieldName, Drop drop) {
+    public WsClient(String urlString, String idFieldName, Messages messages) {
 //        System.out.println(urlString);
 //        System.out.println(idFieldName);
         this.urlString = urlString;
         this.idFieldName = idFieldName;
         this.ready = false;
-        this.drop = drop;
+        this.messages = messages;
     }
 
 
@@ -69,7 +69,7 @@ public class WsClient implements Runnable {
 
             webSocketClient.start();
 
-            listener = new WsListener(this.idFieldName, this.drop);
+            listener = new WsListener(this.idFieldName, this.messages);
 
             webSocketClient.connect(listener, uri);
 

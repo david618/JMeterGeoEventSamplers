@@ -28,7 +28,7 @@ public class WsListener implements WebSocketListener {
     int cnt;
     long sttime;
     
-    Drop drop;
+    Messages messages;
     
     static ConcurrentLinkedQueue<Integer> ids; 
     
@@ -81,11 +81,11 @@ public class WsListener implements WebSocketListener {
         return ready;
     }
 
-    public WsListener(String idFieldName, Drop drop) {
+    public WsListener(String idFieldName, Messages messages) {
         this.idFieldName = idFieldName;
         ids = new ConcurrentLinkedQueue<Integer>();
         ready = false;
-        this.drop = drop;
+        this.messages = messages;
     }
 
 
@@ -96,22 +96,25 @@ public class WsListener implements WebSocketListener {
 
     @Override
     public void onWebSocketText(String s) {
+        
+        // Testing messages
 //        System.out.println(s);
         // Parse the String and find the id 
-        cnt++;
-        if (cnt == 1) {
-            sttime = System.currentTimeMillis();
-        }
-        if (cnt == 2000) {
-           double rate = 2000.0 / (System.currentTimeMillis() - sttime) * 1000.0;
-           System.out.println(rate);
-        }
+//        cnt++;
+//        if (cnt == 1) {
+//            sttime = System.currentTimeMillis();
+//        }
+//        if (cnt == 2000) {
+//           double rate = 2000.0 / (System.currentTimeMillis() - sttime) * 1000.0;
+//           System.out.println(rate);
+//        }
         
         JSONObject json = new JSONObject(s);
         int id = json.getJSONObject("attributes").getInt(idFieldName);
         
-        //drop.putID(id);
-        ids.add(id);
+        // Poppulates messages (Syncrhonized Thread Wait) or ids (Polling)
+        messages.putID(id);
+//        ids.add(id);
     }
 
     @Override

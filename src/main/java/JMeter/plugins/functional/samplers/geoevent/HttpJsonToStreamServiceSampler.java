@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -44,7 +45,7 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
 
     private static WebTarget target;
     
-    private static Drop drop;
+    private static Messages messages;
 
     static WsClient wsClient;
     static Thread readerThread;
@@ -133,26 +134,47 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
          */
         Invocation.Builder invocationBuilder = target.request(MediaType.APPLICATION_JSON);
 
-        Response response = invocationBuilder.post(Entity.entity(getPostBody(), MediaType.APPLICATION_JSON));
+        
+        
+        try {
+            Response response = invocationBuilder.post(Entity.entity(getPostBody(), MediaType.APPLICATION_JSON));
+        } catch (ProcessingException ex) {
+            /*
+            
+            I'm getting a javax.ws.rs.ProcessingException on longer tests (50k+ calls)
+            Already connected.
+            As below I tried to reset the connection; however, this didn't help.
+            One Google post said this might be a "feature" of the Jersey libs; recommended changing to OKHtttp or RestEasy
+            https://github.com/gondor/openstack4j/issues/78  
+            
+            
+            */
+            
+//            System.out.println(ex.getClass().getName());
+//            System.out.println(ex.getMessage());
+//            target = null;
+//            setupTarget();
+            // Ok to ignore
+        }
+        
     
         int t = 0;
-        while (!wsClient.hasId(id, step) && t < timeout) {
-            t += step;
+//        // The following block polls WsClient every step seconds
+//        while (!wsClient.hasId(id, step) && t < timeout) {
+//            t += step;
 //            try {
 //                Thread.sleep(step);
 //            } catch (InterruptedException ex) {
 //                java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
 //            }
-        }
+//        }
         
 
+        // Using Messages with synchronized wait (Also change next if statement)
+        boolean f = messages.getID(id, timeout);
         
-        //boolean f = wsClient.getId(id, timeout);
-        //boolean f = getId(id, timeout);
-        //boolean f = drop.getID(id, timeout);
-        
-        if (t < timeout) {
-//        if (f) {
+//        if (t < timeout) {
+        if (f) {
             sampleResult.setResponseCodeOK();
             sampleResult.setSuccessful(true);
             sampleResult.setResponseMessage("Okay");
@@ -182,10 +204,10 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
     public void testStarted(String string) {
         System.out.println("Test Started");
         
-        drop = new Drop();
+        messages = new Messages();
 
         
-        wsClient = new WsClient(getStreamServiceURL() + "/subscribe", getIDFieldName(), drop);
+        wsClient = new WsClient(getStreamServiceURL() + "/subscribe", getIDFieldName(), messages);
         readerThread = new Thread(wsClient);
         readerThread.start();
 
@@ -197,6 +219,12 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
             }
         }
 
+        setupTarget();
+        log.debug("Test Started");
+    }
+    
+    
+    private void setupTarget() {
         try {
             // Send the Message to Rest Endpoint
             String urlString = getRestInputURL();
@@ -245,8 +273,7 @@ public class HttpJsonToStreamServiceSampler extends AbstractSampler implements T
         } catch (KeyManagementException ex) {
             java.util.logging.Logger.getLogger(HttpJsonToStreamServiceSampler.class.getName()).log(Level.SEVERE, null, ex);
             ex.printStackTrace();
-        }
-        log.debug("Test Started");
+        }        
     }
 
     @Override

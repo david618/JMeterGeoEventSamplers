@@ -11,19 +11,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author davi5017
  */
-public class Drop {
-
+public class Messages {
     static ConcurrentLinkedQueue<Integer> ids; 
 
-    public Drop() {
+    public Messages() {
         ids = new ConcurrentLinkedQueue<>();
     }
     
    
+    private boolean empty = true;
+    
     public synchronized boolean getID(int id, int timeout) {
 
         boolean f = false;
         long endtime = System.currentTimeMillis() + timeout;
+        
+//        System.out.println(ids);
         
         while (!ids.contains((Integer) id) && System.currentTimeMillis() < endtime) {
             try {
@@ -33,13 +36,22 @@ public class Drop {
                 ex.printStackTrace();
             }
         }
+        
+        if (ids.contains((Integer) id)) {
+            f = true;
+            ids.remove((Integer) id);
+        }
+
         notifyAll();
         return f;
 
     }
 
-    public void putID(int id) {
+    public synchronized void putID(int id) {
+        
+     
         ids.add(id);
+//        System.out.println(id);
         notifyAll();
-    }
+    }    
 }
